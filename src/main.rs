@@ -65,12 +65,12 @@ fn main() -> ZippyResult<()> {
                          .default_value("deflate")
                          .short("m")
                          .long("method")
-                         .help("Method used for compression, one of: [store, deflate, bzip2, zstd], default is deflate"))
+                         .help("Method used for compression, one of: [store, deflate, bzip2, zstd]"))
                     .arg(Arg::with_name("level")
                          .takes_value(true)
                          .short("l")
                          .long("level")
-                         .help("Compression level dependant on used method, see zip-rs docs for more info")))
+                         .help("Compression level, dependent on used method (see zip-rs docs for more info)")))
         .get_matches();
 
     // Record how many times the user used the "verbose" flag
@@ -99,7 +99,7 @@ fn main() -> ZippyResult<()> {
                     Some("bzip2") => CompressionMethod::Bzip2,
                     Some("zstd") => CompressionMethod::Zstd,
                     _ => {
-                        log!("invalid compression method, aborting");
+                        log!("invalid compression method");
                         process::exit(-1)
                     }
                 };
@@ -110,7 +110,7 @@ fn main() -> ZippyResult<()> {
                         match x.parse::<i32>() {
                             Ok(v) => Some(v),
                             _ => {
-                                log!("invalid compression level, aborting");
+                                log!("invalid compression level");
                                 process::exit(-1)
                             }
                         }
