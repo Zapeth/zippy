@@ -60,7 +60,17 @@ fn main() -> ZippyResult<()> {
                          .takes_value(true)
                          .short("o")
                          .long("output")
-                         .help("The destination zip file.")))
+                         .help("The destination zip file."))
+                    .arg(Arg::with_name("method")
+                         .default_value("deflate")
+                         .short("m")
+                         .long("method")
+                         .help("Method used for compression, one of: [store, deflate, bzip2, zstd], default is deflate"))
+                    .arg(Arg::with_name("level")
+                         .takes_value(true)
+                         .short("l")
+                         .long("level")
+                         .help("Compression level dependant on used method, see zip-rs docs for more info")))
         .get_matches();
 
     // Record how many times the user used the "verbose" flag
@@ -77,19 +87,47 @@ fn main() -> ZippyResult<()> {
         },
     }
 
-    // TODO: The `method` should be an argument to the `zip` subcmd:
-    let compression_method = CompressionMethod::Stored;
-
     if let Some(zip_matches) = matches.subcommand_matches("zip") {
         if let Some(output_path) = zip_matches.value_of("output") {
             let output_path: &Path = Path::new(output_path);
             log!("creating zip file @ {}", output_path.display());
             let mut zippy = Zippy::new();
             if let Some(input_paths) = zip_matches.values_of("input") {
+                let compression_method = match zip_matches.value_of("method") {
+                    Some("store") => CompressionMethod::Stored,
+                    Some("deflate") => CompressionMethod::Deflated,
+                    Some("bzip2") => CompressionMethod::Bzip2,
+                    Some("zstd") => CompressionMethod::Zstd,
+                    _ => {
+                        log!("invalid compression method, aborting");
+                        process::exit(-1)
+                    }
+                };
+                log!("using compression method {:?}", compression_method);
+
+                let compression_level = match zip_matches.value_of("level") {
+                    Some(x) => {
+                        match x.parse::<i32>() {
+                            Ok(v) => Some(v),
+                            _ => {
+                                log!("invalid compression level, aborting");
+                                process::exit(-1)
+                            }
+                        }
+                    },
+                    None => None
+                };
+                if let Some(level) = compression_level {
+                    log!("using compression level {}", level)
+                } else {
+                    log!("using default compression level")
+                }
+
                 zippy.zip(
                     input_paths.into_iter().map(Path::new),
                     output_path,
-                    compression_method
+                    compression_method,
+                    compression_level
                 )?;
             }
         }
@@ -124,7 +162,8 @@ impl Zippy {
     pub fn zip<'z>(&'z mut self,
                    input_paths: impl Iterator<Item = &'z Path>,
                    output_path: &Path,
-                   method: CompressionMethod)
+                   method: CompressionMethod,
+                   level: Option<i32>)
                    -> ZippyResult<()> {
         if output_path.exists() {
             // TODO: addition mode i.e. open the existing
@@ -135,7 +174,7 @@ impl Zippy {
         let mut zip: ZipWriter<_> = ZipWriter::new(File::create(output_path)?);
         let options = FileOptions::default()
             .compression_method(method)
-            .unix_permissions(0o755);
+            .compression_level(level);
         for input_path in input_paths {
             // log!("input: {}", input_path.display());
             if input_path.is_dir() {
