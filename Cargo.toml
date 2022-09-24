@@ -7,9 +7,9 @@ description = "CLI-based un/zipping tool that's available anywhere Rust is."
 documentation = "https://docs.rs/zippy"
 homepage = "https://github.com/jjpe/zippy"
 repository = "https://github.com/jjpe/zippy"
+edition = "2018"
 
 [dependencies]
-clap = "2.32"
-ioe = "0.3"
-walkdir = "2.2"
-zip = "0.4"
+clap = "2.34"
+walkdir = "2.3"
+zip = "0.6"
