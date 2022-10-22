@@ -224,14 +224,14 @@ impl Zippy {
             // TODO
         }
         // log!("zip DIR {}", dirpath.display());
-        for entry in WalkDir::new(&dirpath) { // recursively walk `dirpath`
+        for entry in WalkDir::new(&input_dirpath) { // recursively walk `input_dirpath`
             let entry: DirEntry = entry?;
             let entry_path: PathBuf = fs::canonicalize(entry.path())?;
             if entry_path.is_dir() {
                 // log!("SKIP dir {}", entry_path.display());
                 continue
             }
-            self.add_file(&entry_path, zip, options)?;
+            self.add_file(entry.path(), zip, options)?;
         }
         Ok(())
     }
